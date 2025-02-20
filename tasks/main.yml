@@ -34,7 +34,7 @@
   ansible.builtin.shell: /home/{{ matlab_user }}/mpm install --inputfile /home/{{ matlab_user }}/input.txt
   register: matlab_install
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
-  failed_when: matlab_install.rc != 0 && 'All specified products are already installed' not in matlab_install.stderr
+  failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
 
 - name: Create MATLAB Symlink
   ansible.builtin.file:
