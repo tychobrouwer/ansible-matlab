@@ -32,8 +32,9 @@
 
 - name: Install MATLAB using MPM
   ansible.builtin.shell: /home/{{ matlab_user }}/mpm install --inputfile /home/{{ matlab_user }}/input.txt
-  args:
-    creates: "{{ matlab_install_location }}/bin/matlab"
+  register: matlab_install
+  when: "'All specified products are already installed' not in matlab_install.stderr"
+  failed_when: matlab_install.rc != 0 && 'All specified products are already installed' not in matlab_install.stderr
 
 - name: Create MATLAB Symlink
   ansible.builtin.file:
