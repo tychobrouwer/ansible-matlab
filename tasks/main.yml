@@ -24,7 +24,7 @@
 
 - name: Get input.txt to remote
   ansible.builtin.copy:
-    src: input.txt
+    src: "{{ matlab_input_file }}"
     dest: /home/{{ matlab_user }}/input.txt
     mode: "0644"
     owner: "{{ matlab_user }}"

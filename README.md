@@ -15,8 +15,10 @@ Example Playbook
         password: "password123"
       
       roles:
-         - { role: tychobrouwer.matlab }
          - { role: tychobrouwer.matlab,
+             matlab_input_file: templates/matlab-input.txt }
+         - { role: tychobrouwer.matlab,
+             matlab_input_file: templates/matlab-input.txt,
              matlab_release: R2024b,
              matlab_install_location: "/opt/matlab/{{ matlab_release }}",
              matlab_user: "matlab"
