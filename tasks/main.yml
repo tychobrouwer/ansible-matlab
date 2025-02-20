@@ -19,7 +19,7 @@
     url: "https://www.mathworks.com/mpm/glnxa64/mpm"
     dest: "/home/{{ matlab_user }}/mpm"
     mode: "0755"
-    user: "{{ matlab_user }}"
+    owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
 
 - name: Get input.txt to remote
