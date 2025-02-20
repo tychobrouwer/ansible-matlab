@@ -1,0 +1,13 @@
+[Unit]
+Description=MATLAB Service (Browser Mode)
+After=network.target
+
+[Service]
+User=matlab
+ExecStart=/usr/local/bin/matlab -browser
+Restart=always
+WorkingDirectory=/home/matlab
+
+[Install]
+WantedBy=multi-user.target
+

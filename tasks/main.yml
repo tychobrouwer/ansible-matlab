@@ -1,0 +1,63 @@
+---
+# tasks file for matlab
+- name: Install Required Dependencies
+  ansible.builtin.apt:
+    name:
+      - wget
+      - ca-certificates
+    update_cache: yes
+    state: present
+
+- name: Create MATLAB User
+  ansible.builtin.user:
+    name: "{{ matlab_user }}"
+    shell: /bin/bash
+    createhome: yes
+
+- name: Switch to MATLAB User and Download MPM
+  ansible.builtin.get_url:
+    url: "https://www.mathworks.com/mpm/glnxa64/mpm"
+    dest: "/home/{{ matlab_user }}/mpm"
+    mode: "0755"
+    user: "{{ matlab_user }}"
+    group: "{{ matlab_user }}"
+
+- name: Get input.txt to remote
+  ansible.builtin.copy:
+    src: input.txt
+    dest: /home/{{ matlab_user }}/input.txt
+    mode: "0644"
+    owner: "{{ matlab_user }}"
+    group: "{{ matlab_user }}"
+
+- name: Install MATLAB using MPM
+  ansible.builtin.shell: >
+    /home/{{ matlab_user }}/mpm install
+    --release={{ matlab_release }}
+    --destination={{ matlab_install_location }}
+    --input_file=/home/{{ matlab_user }}/input.txt
+  args:
+    creates: "{{ matlab_install_location }}/bin/matlab"
+
+- name: Create MATLAB Symlink
+  ansible.builtin.file:
+    src: "{{ matlab_install_location }}/bin/matlab"
+    dest: "/usr/local/bin/matlab"
+    state: link
+    owner: root
+    group: root
+
+- name: Ensure matlab service file is on remote (systemd)
+  ansible.builtin.template:
+    src: matlab.service.j2
+    dest: /etc/systemd/system/minecraft.service
+    mode: "0664"
+    owner: root
+    group: root
+
+- name: Ensure matlab service is enabled and started
+  ansible.builtin.service:
+    name: matlab
+    state: started
+    enabled: true
+
