@@ -31,7 +31,7 @@
     group: "{{ matlab_user }}"
 
 - name: Install MATLAB using MPM
-  ansible.builtin.shell: /home/{{ matlab_user }}/mpm install --input_file /home/{{ matlab_user }}/input.txt
+  ansible.builtin.shell: /home/{{ matlab_user }}/mpm install --inputfile /home/{{ matlab_user }}/input.txt
   args:
     creates: "{{ matlab_install_location }}/bin/matlab"
 
