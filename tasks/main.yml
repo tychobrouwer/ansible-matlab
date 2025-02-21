@@ -125,14 +125,11 @@
 
 - name: Make MATLAB directories
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons
     state: directory
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
     mode: "0755"
-  with_items:
-    - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons
-    - /home/{{ matlab_user }}/Desktop
 
 - name: Touch MATLAB files 
   ansible.builtin.file:
@@ -171,14 +168,14 @@
 
 - name: Get mathworks service host
   ansible.builtin.get_url:
-    url: https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh
-    dest: /tmp/install_managed_msh.sh
+    url: "{{ matlab_service_host_url }}"
+    dest: "{{ matlab_service_host_script }}"
     mode: "0755"
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
 
 - name: Run mathworks service host
-  ansible.builtin.shell: HOME=/home/{{ matlab_user }} /tmp/install_managed_msh.sh --destination /opt/MathWorks/ServiceHost
+  ansible.builtin.shell: HOME=/home/{{ matlab_user }} {{ matlab_service_host_script }} --destination {{ matlab_service_host_dest }}
   args:
     creates: /home/{{ matlab_user }}/.matlab/MathWorksServiceHost
   register: mathworks_service_host
@@ -187,14 +184,14 @@
 
 - name: Download MPM
   ansible.builtin.get_url:
-    url: "https://www.mathworks.com/mpm/glnxa64/mpm"
-    dest: "/home/{{ matlab_user }}/mpm"
+    url: "{{ matlab_mpm_url }}"
+    dest: "{{ matlab_mpm_dest }}"
     mode: "0755"
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
 
 - name: Install MATLAB using MPM
-  ansible.builtin.shell: /home/{{ matlab_user }}/mpm install --inputfile /home/{{ matlab_user }}/input.txt
+  ansible.builtin.shell: "{{ matlab_mpm_dest }} install --inputfile /home/{{ matlab_user }}/input.txt"
   register: matlab_install
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
