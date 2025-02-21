@@ -202,7 +202,7 @@
 
 - name: Create matlab desktop file
   ansible.builtin.template:
-    src: MATLABcd .desktop.j2
+    src: MATLAB.desktop.j2
     dest: /home/{{ matlab_user }}/Desktop/MATLAB.desktop
     mode: "0644"
     owner: "{{ matlab_user }}"
