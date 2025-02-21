@@ -138,6 +138,8 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: touch
+    modification_time: preserve
+    access_time: preserve
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
     mode: "0644"
