@@ -119,6 +119,7 @@
     dest: "{{ item.dest }}"
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
+    mode: "0644"
   with_items:
     - src: "{{ matlab_input_file }}"
       dest: /home/{{ matlab_user }}/input.txt
