@@ -4,10 +4,11 @@ After=network.target
 
 [Service]
 User=matlab
-ExecStart=/usr/local/bin/matlab -browser
+ExecStart=/usr/bin/bash -ic 'matlab-proxy-app'
 Restart=always
-WorkingDirectory=/home/matlab
+WorkingDirectory=/home/matlab/Documents/MATLAB
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
-
