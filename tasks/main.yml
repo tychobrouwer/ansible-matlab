@@ -3,9 +3,12 @@
 - name: Install Required Dependencies
   ansible.builtin.apt:
     name:
-      - wget
       - ca-certificates
+      - csh
       - debianutils
+      - g++
+      - gcc
+      - gfortran
       - libasound2
       - libatomic1
       - libc6
@@ -43,11 +46,13 @@
       - libxcomposite1
       - libxcursor1
       - libxdamage1
+      - libxext6
       - libxfixes3
       - libxfont2
       - libxft2
       - libxinerama1
       - libxrandr2
+      - libxrender1
       - libxt6
       - libxtst6
       - libxxf86vm1
@@ -58,6 +63,9 @@
       - procps
       - sudo
       - unzip
+      - wget
+      - x11-utils
+      - x11-xserver-utils
       - zlib1g
       - gcc
       - g++
@@ -98,10 +106,11 @@
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
 
 - name: Create MATLAB Symlink
-  ansible.builtin.file:
-    src: "{{ matlab_install_location }}/bin/matlab"
+  ansible.builtin.copy:
+    src: matlab
     dest: "/usr/local/bin/matlab"
-    state: link
+    remote_src: true
+    mode: "0755"
     owner: root
     group: root
 
