@@ -154,16 +154,18 @@
     owner: root
     group: root
   with_items:
-    - PATH=/home/matlab/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    - PATH="/home/matlab/.local/bin:$PATH"
     - MW_DDUX_FORCE_ENABLE=true
     - MWI_APP_PORT=8888
     - MWI_ENABLE_TOKEN_AUTH=False
     - MW_SERVICEHOST_USE_HOSTNAME_FOR_PERSISTENCE=false
 
-- name: Install required pipx packages
+- name: Install mathlab-proxy using pipx
   community.general.pipx:
     name: matlab-proxy
     state: present
+  become: true
+  become_user: "{{ matlab_user }}"
 
 - name: Get mathworks service host
   ansible.builtin.get_url:
@@ -174,7 +176,7 @@
     group: "{{ matlab_user }}"
 
 - name: Run mathworks service host
-  ansible.builtin.shell: /tmp/install_managed_msh.sh --destination /opt/MathWorks/ServiceHost
+  ansible.builtin.shell: HOME=/home/{{ matlab_user }} /tmp/install_managed_msh.sh --destination /opt/MathWorks/ServiceHost
   args:
     creates: /home/{{ matlab_user }}/.matlab/MathWorksServiceHost
   register: mathworks_service_host
@@ -195,30 +197,22 @@
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
 
-- name: Copy readme files
+- name: Copy localsudo file to remote
   ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
+    src: localsudo
+    dest: /etc/sudoers.d/localsudo
     owner: root
     group: root
     mode: "0644"
-  with_items:
-    - src: browser_readme
-      dest: /etc/browser_readme
-    - src: help_readme
-      dest: /etc/help_readme
-    - src: welcome_readme
-      dest: /etc/welcome_readme
-    - src: localsudo
-      dest: /etc/sudoers.d/localsudo
 
 - name: Create MATLAB symlink
   ansible.builtin.copy:
     src: "{{ matlab_install_location }}/bin/matlab"
     dest: /usr/local/bin/matlab
-    mode: "0755"
+    remote_src: true
     owner: root
     group: root
+    mode: "0755"
 
 - name: Ensure matlab service file is on remote (systemd)
   ansible.builtin.template:
