@@ -147,7 +147,7 @@
 
 - name: Add MATLAB to PATH
   ansible.builtin.lineinfile:
-    path: /etc/environment
+    path: /etc/profile.d/matlab.sh
     line: "{{ item }}"
     create: true
     mode: "0644"
