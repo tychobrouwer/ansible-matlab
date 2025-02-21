@@ -1,65 +1,34 @@
 ENV MHLM_CONTEXT=MATLAB_DOCKERHUB
 ENV MW_CONTEXT_TAGS=MATLAB:DOCKERHUB:V1
 CMD []
-
 ENTRYPOINT ["tini" "--" "/bin/run.sh"]
-
 WORKDIR /home/matlab/Documents/MATLAB/
-
-MATLAB_RELEASE=R2024b
-HOME=/home/matlab
-
-# chown -R matlab:matlab ${HOME}
-# chmod u+w ${HOME}/Desktop/MATLAB.desktop
-# chmod u+w ${HOME}/.matlab/${MATLAB_RELEASE}/matlab.prf
-# chmod +x ${HOME}/Desktop/MATLAB.desktop
-# touch ${HOME}/.Xauthority
-# sed -i "s/{{MATLAB_RELEASE}}/${MATLAB_RELEASE}/g" ${HOME}/Desktop/MATLAB.desktop
-
-# COPY build/config/xscreensaver /home/matlab/.xscreensaver
-# COPY build/config/matlab.prf /home/matlab/.matlab/R2024b/
-# COPY build/config/startup.m /home/matlab/Documents/MATLAB/
-# COPY build/config/xfce4/ /home/matlab/.config/xfce4/
-# COPY build/config/MATLAB.desktop /home/matlab/Desktop/
-
+RUN |11 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC HOME=/home/matlab MSH_TMP=/tmp/install_managed_msh.sh MSH_ROOT=/opt/MathWorks/ServiceHost DEFAULT_VNC_PASSWORD=matlab /bin/sh -c printf "${DEFAULT_VNC_PASSWORD}\n${DEFAULT_VNC_PASSWORD}\n\n" | vncpasswd # buildkit
+ARG DEFAULT_VNC_PASSWORD=matlab
+COPY build/config/novnc_login_redirect.html /opt/noVNC/redirect.html # buildkit
+RUN |10 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC HOME=/home/matlab MSH_TMP=/tmp/install_managed_msh.sh MSH_ROOT=/opt/MathWorks/ServiceHost /bin/sh -c sudo chown -R matlab:matlab ${HOME}     && chmod +x  ${HOME}/.vnc/xstartup     && chmod u+w ${HOME}/Desktop/MATLAB.desktop     && chmod u+w ${HOME}/.matlab/${MATLAB_RELEASE}/matlab.prf     && chmod +x  ${HOME}/Desktop/MATLAB.desktop     && touch     ${HOME}/.Xauthority     && sed -i "s/{{MATLAB_RELEASE}}/${MATLAB_RELEASE}/g" ${HOME}/Desktop/MATLAB.desktop # buildkit
+COPY build/config/xscreensaver /home/matlab/.xscreensaver # buildkit
+COPY build/config/matlab.prf /home/matlab/.matlab/R2024b/ # buildkit
+COPY build/config/startup.m /home/matlab/Documents/MATLAB/ # buildkit
+COPY build/config/xfce4/ /home/matlab/.config/xfce4/ # buildkit
+COPY build/config/MATLAB.desktop /home/matlab/Desktop/ # buildkit
+COPY build/config/xstartup /home/matlab/.vnc/ # buildkit
 ENV MW_DDUX_FORCE_ENABLE=true
 EXPOSE map[8888/tcp:{}]
 ENV MWI_APP_PORT=8888
 ENV MWI_ENABLE_TOKEN_AUTH=False
-
 ENV PATH=/home/matlab/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-RUN HOME=/home/matlab /bin/sh -c mkdir -p ${HOME}/Documents/MATLAB/Add-Ons && touch ${HOME}/Documents/MATLAB/Add-Ons/.toolboxFolders && touch ${HOME}/Documents/MATLAB/Add-Ons/.zipFolders && python3 -m pipx install matlab-proxy # buildkit
-
-RUN MSH_TMP=/tmp/install_managed_msh.sh MSH_ROOT=/opt/MathWorks/ServiceHost /bin/sh -c wget -O "${MSH_TMP}" "${MATHWORKS_SERVICE_HOST_INSTALL_URL}" && chmod +x "${MSH_TMP}" && sudo ${MSH_TMP} --destination ${MSH_ROOT} && rm "${MSH_TMP}" # buildkit
-
+RUN |10 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC HOME=/home/matlab MSH_TMP=/tmp/install_managed_msh.sh MSH_ROOT=/opt/MathWorks/ServiceHost /bin/sh -c mkdir -p ${HOME}/Documents/MATLAB/Add-Ons     && touch ${HOME}/Documents/MATLAB/Add-Ons/.toolboxFolders     && touch ${HOME}/Documents/MATLAB/Add-Ons/.zipFolders     && python3 -m pipx install matlab-proxy # buildkit
+RUN |10 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC HOME=/home/matlab MSH_TMP=/tmp/install_managed_msh.sh MSH_ROOT=/opt/MathWorks/ServiceHost /bin/sh -c wget -O "${MSH_TMP}" "${MATHWORKS_SERVICE_HOST_INSTALL_URL}"     && chmod +x "${MSH_TMP}"     && sudo ${MSH_TMP} --destination ${MSH_ROOT}     && rm "${MSH_TMP}" # buildkit
 ARG MSH_ROOT=/opt/MathWorks/ServiceHost
 ARG MSH_TMP=/tmp/install_managed_msh.sh
 ENV MW_SERVICEHOST_USE_HOSTNAME_FOR_PERSISTENCE=false
-
-MATLAB_RELEASE=R2024b
-MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b
-HOME=/home/matlab
-
-wget -q https://www.mathworks.com/mpm/glnxa64/mpm
-chmod +x mpm
-sudo HOME=${HOME} ./mpm install --release=${MATLAB_RELEASE} --destination=${MATLAB_INSTALL_LOCATION} ${MPM_ADDITIONAL_FLAGS} --products "MATLAB" 
-sudo rm -f ${MATLAB_INSTALL_LOCATION}/sys/os/glnxa64/libstdc++.* 
-sudo rm -f mpm /tmp/mathworks_root.log
-sudo ln -s ${MATLAB_INSTALL_LOCATION}/bin/matlab /usr/local/bin/matlab
-
+RUN |8 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC HOME=/home/matlab /bin/sh -c wget -q https://www.mathworks.com/mpm/glnxa64/mpm     && chmod +x mpm     && sudo HOME=${HOME} ./mpm install     --release=${MATLAB_RELEASE}     --destination=${MATLAB_INSTALL_LOCATION}     ${MPM_ADDITIONAL_FLAGS}     --products "MATLAB"     || (echo "MPM Installation Failure. See below for more information:" && cat /tmp/mathworks_root.log && false)     && sudo rm -f ${MATLAB_INSTALL_LOCATION}/sys/os/glnxa64/libstdc++.*     && sudo rm -f mpm /tmp/mathworks_root.log     && sudo ln -s ${MATLAB_INSTALL_LOCATION}/bin/matlab /usr/local/bin/matlab # buildkit
 WORKDIR /home/matlab
-
 USER matlab
-
-# adduser --home ${HOME} --shell /bin/bash --disabled-password --gecos "" matlab
-# echo "matlab ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/matlab
-# chmod 0440 /etc/sudoers.d/matlab
-
+RUN |8 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC HOME=/home/matlab /bin/sh -c adduser --home ${HOME} --shell /bin/bash --disabled-password --gecos "" matlab     && echo "matlab ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/matlab     && chmod 0440 /etc/sudoers.d/matlab # buildkit
 ARG HOME=/home/matlab
-
 RUN |7 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC /bin/sh -c for file in $(ls /etc/*_readme); do     sed -i "s/{{MATLAB_RELEASE}}/${MATLAB_RELEASE}/g" "${file}";     done # buildkit
-
 COPY build/readmes/browser_readme /etc/browser_readme # buildkit
 COPY build/readmes/vnc_readme /etc/vnc_readme # buildkit
 COPY build/readmes/help_readme /etc/help_readme # buildkit
@@ -67,38 +36,25 @@ COPY build/readmes/welcome_readme /etc/welcome_readme # buildkit
 COPY build/utils.sh /bin/utils.sh # buildkit
 COPY build/run.sh /bin/run.sh # buildkit
 COPY build/config/localsudo /etc/sudoers.d/ # buildkit
-
 EXPOSE map[5901/tcp:{} 6080/tcp:{}]
-
 RUN |7 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools NOVNC=/opt/noVNC /bin/sh -c mkdir -p ${NOVNC}/utils/websockify     && curl -sSfL 'https://github.com/novnc/noVNC/archive/v1.2.0.tar.gz' | sudo tar -zxf - -C ${NOVNC} --strip=1     && curl -sSfL 'https://github.com/novnc/websockify/archive/v0.10.0.tar.gz' | sudo tar -zxf - -C ${NOVNC}/utils/websockify --strip=1     && find ${NOVNC} -name ".git*" | sudo xargs rm -rf     && ln -s /usr/bin/python3 /usr/bin/python     && ln -s $NOVNC/vnc.html $NOVNC/index.html # buildkit
-
-
 ARG NOVNC=/opt/noVNC
-
-
-RUN /bin/sh -c export DEBIAN_FRONTEND=noninteractive     && apt-get -qq update     && apt-get -qq install --yes --no-install-recommends     tigervnc-standalone-server     tigervnc-common     dbus-x11     ${APT_ADDITIONAL_PACKAGES_VNC}     && apt-get clean     && apt-get -y autoremove     && rm -rf /var/lib/apt/lists/* # buildkit
-
-RUN /bin/sh -c export DEBIAN_FRONTEND=noninteractive && apt-get -qq update && apt-get -qq install --yes --no-install-recommends apt-utils ca-certificates gcc g++ libglu1-mesa libosmesa6 xfce4 xscreensaver python3 python3-pip pipx xvfb tini     sudo curl wget nano xfce4-terminal psmisc less ${APT_ADDITIONAL_PACKAGES} && apt-get remove -y tumbler pulseaudio gvfs gnome-screensaver && apt-get clean && apt-get -y autoremove && rm -rf /var/lib/apt/lists/* # buildkit
-
+RUN |6 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools /bin/sh -c export DEBIAN_FRONTEND=noninteractive     && apt-get -qq update     && apt-get -qq install --yes --no-install-recommends     tigervnc-standalone-server     tigervnc-common     dbus-x11     ${APT_ADDITIONAL_PACKAGES_VNC}     && apt-get clean     && apt-get -y autoremove     && rm -rf /var/lib/apt/lists/* # buildkit
+RUN |6 MATLAB_RELEASE=R2024b MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b MPM_ADDITIONAL_FLAGS= MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh APT_ADDITIONAL_PACKAGES= APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools /bin/sh -c export DEBIAN_FRONTEND=noninteractive     && apt-get -qq update     && apt-get -qq install --yes --no-install-recommends     apt-utils     ca-certificates     gcc     g++     libglu1-mesa     libosmesa6     xfce4     xscreensaver     python3     python3-pip     pipx     xvfb     tini     sudo     curl     wget     nano     xfce4-terminal     psmisc     less     ${APT_ADDITIONAL_PACKAGES}     && apt-get remove -y     tumbler     pulseaudio     gvfs     gnome-screensaver     && apt-get clean     && apt-get -y autoremove     && rm -rf /var/lib/apt/lists/* # buildkit
 ARG APT_ADDITIONAL_PACKAGES_VNC=tigervnc-tools
 ARG APT_ADDITIONAL_PACKAGES=
-ARG MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh0B
+ARG MATHWORKS_SERVICE_HOST_INSTALL_URL=https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh
 ARG MPM_ADDITIONAL_FLAGS=
 ARG MATLAB_INSTALL_LOCATION=/opt/matlab/R2024b
 ARG MATLAB_RELEASE=R2024b
-
 WORKDIR /
-
 RUN /bin/sh -c [ -d /usr/share/X11/xkb ] || mkdir -p /usr/share/X11/xkb # buildkit
 RUN /bin/sh -c export DEBIAN_FRONTEND=noninteractive     && apt-get update     && apt-get install --no-install-recommends -y `cat /tmp/base-dependencies.txt`     && apt-get clean && apt-get -y autoremove     && rm -rf /var/lib/apt/lists/* # buildkit
-
 COPY base-dependencies.txt /tmp/base-dependencies.txt # buildkit
-
 LABEL maintainer=The MathWorks, Inc.
-
-/bin/sh -c #(nop)  CMD ["/bin/bash"]   
-/bin/sh -c #(nop) ADD file:1b6c8c9518be42fa2afe5e241ca31677fce58d27cdfa88baa91a65a259be3637
-/bin/sh -c #(nop)  LABEL org.opencontainers.image.version=22.
-/bin/sh -c #(nop)  LABEL org.opencontainers.image.ref.
+/bin/sh -c #(nop)  CMD ["/bin/bash"]
+/bin/sh -c #(nop) ADD file:1b6c8c9518be42fa2afe5e241ca31677fce58d27cdfa88baa91a65a259be3637 in /
+/bin/sh -c #(nop)  LABEL org.opencontainers.image.version=22.04
+/bin/sh -c #(nop)  LABEL org.opencontainers.image.ref.name=ubuntu
 /bin/sh -c #(nop)  ARG LAUNCHPAD_BUILD_ARCH
 /bin/sh -c #(nop)  ARG RELEASE

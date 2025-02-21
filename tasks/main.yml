@@ -156,14 +156,28 @@
     - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.toolboxFolders
     - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.zipFolders
 
+- name: Copy required scripts to remote
+  ansible.builtin.copy:
+    src: utils.sh
+    dest: /usr/bin/utils.sh
+    mode: "0755"
+    owner: root
+    group: root
+
 - name: Add MATLAB to PATH
   ansible.builtin.lineinfile:
     path: /etc/environment
-    line: 'PATH=/home/matlab/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+    line: "{{ item }}"
     create: true
     mode: "0644"
     owner: root
     group: root
+  with_items:
+    - PATH=/home/matlab/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    - MW_DDUX_FORCE_ENABLE=true
+    - MWI_APP_PORT=8888
+    - MWI_ENABLE_TOKEN_AUTH=False
+    - MW_SERVICEHOST_USE_HOSTNAME_FOR_PERSISTENCE=false
 
 - name: Install required pipx packages
   community.general.pipx:
