@@ -3,20 +3,20 @@
 - name: Install Required Dependencies
   ansible.builtin.apt:
     name:
+      - apt-utils
       - ca-certificates
-      - csh
-      - debianutils
+      - curl
       - g++
       - gcc
-      - gfortran
+      - less
       - libasound2
       - libatomic1
       - libc6
       - libcairo-gobject2
       - libcairo2
       - libcap2
-      - libcrypt1
       - libcups2
+      - libcrypt1
       - libdrm2
       - libfontconfig1
       - libfribidi0
@@ -24,6 +24,7 @@
       - libgdk-pixbuf-2.0-0
       - libgl1
       - libglib2.0-0
+      - libglu1-mesa
       - libgstreamer-plugins-base1.0-0
       - libgstreamer1.0-0
       - libgtk-3-0
@@ -33,6 +34,7 @@
       - libnettle8
       - libnspr4
       - libnss3
+      - libosmesa6
       - libpam0g
       - libpango-1.0-0
       - libpangocairo-1.0-0
@@ -46,56 +48,154 @@
       - libxcomposite1
       - libxcursor1
       - libxdamage1
-      - libxext6
       - libxfixes3
       - libxfont2
       - libxft2
       - libxinerama1
       - libxrandr2
-      - libxrender1
       - libxt6
       - libxtst6
       - libxxf86vm1
       - locales
       - locales-all
       - make
+      - nano
       - net-tools
+      - pipx
       - procps
+      - psmisc
+      - python3
+      - python3-pip
       - sudo
+      - tini
       - unzip
       - wget
-      - x11-utils
-      - x11-xserver-utils
+      - xfce4
+      - xfce4-terminal
+      - xscreensaver
+      - xvfb
       - zlib1g
-      - gcc
-      - g++
-      - gfortran
-      - csh
+    update_cache: true
+    install_recommends: false
+    state: present
+
+- name: Remove unneeded packages
+  ansible.builtin.apt:
+    name:
+      - tumbler
+      - pulseaudio
+      - gvfs
+      - gnome-screensaver
+    state: absent
     update_cache: true
     autoremove: true
     clean: true
-    install_recommends: false
-    state: present
 
 - name: Create MATLAB User
   ansible.builtin.user:
     name: "{{ matlab_user }}"
     shell: /bin/bash
-    createhome: true
+    create_home: true
+    password: "!"
 
-- name: Switch to MATLAB User and Download MPM
+- name: Create sudoers.d directory
+  ansible.builtin.file:
+    path: /etc/sudoers.d
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Add MATLAB User to sudoers
+  ansible.builtin.copy:
+    content: "{{ matlab_user }} ALL=(ALL) NOPASSWD: ALL"
+    dest: /etc/sudoers.d/{{ matlab_user }}
+    mode: "0440"
+    validate: 'visudo -cf %s'
+
+- name: Make MATLAB directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ matlab_user }}"
+    group: "{{ matlab_user }}"
+    mode: "0755"
+  with_items:
+    - /home/{{ matlab_user }}/.matlab/{{ matlab_release }}
+    - /home/{{ matlab_user }}/MATLAB
+    - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons
+    - /home/{{ matlab_user }}/Desktop
+    - /home/{{ matlab_user }}/.config
+
+- name: Copy required files to remote
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ matlab_user }}"
+    group: "{{ matlab_user }}"
+  with_items:
+    - src: xscreensaver
+      dest: /home/{{ matlab_user }}/.xscreensaver
+    - src: matlab.prf
+      dest: /home/{{ matlab_user }}/.matlab/{{ matlab_release }}/matlab.prf
+    - src: startup.m
+      dest: /home/{{ matlab_user }}/MATLAB/startup.m
+    - src: xfce4
+      dest: /home/{{ matlab_user }}/.config/xfce4
+    - src: input.txt
+      dest: /home/{{ matlab_user }}/input.txt
+
+- name: Touch MATLAB files 
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: touch
+    owner: "{{ matlab_user }}"
+    group: "{{ matlab_user }}"
+    mode: "0644"
+  with_items:
+    - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.toolboxFolders
+    - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.zipFolders
+
+- name: Add MATLAB to PATH
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    line: 'PATH=/home/matlab/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+    create: true
+    mode: "0644"
+    owner: root
+    group: root
+
+- name: Install required pipx packages
+  community.general.pipx:
+    name: matlab-proxy
+    state: present
+
+- name: Get mathworks service host
   ansible.builtin.get_url:
-    url: "https://www.mathworks.com/mpm/glnxa64/mpm"
-    dest: "/home/{{ matlab_user }}/mpm"
+    url: https://www.mathworks.com/MathWorksServiceHost/glnxa64/install_managed_msh.sh
+    dest: /tmp/install_managed_msh.sh
     mode: "0755"
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
 
-- name: Get input.txt to remote
-  ansible.builtin.copy:
-    src: "{{ matlab_input_file }}"
-    dest: /home/{{ matlab_user }}/input.txt
+- name: Run mathworks service host
+  ansible.builtin.shell: /tmp/install_managed_msh.sh --destination /opt/MathWorks/ServiceHost
+  args:
+    creates: /home/{{ matlab_user }}/.matlab/MathWorksServiceHost
+
+- name: Create matlab desktop file
+  ansible.builtin.template:
+    src: matlab.desktop.j2
+    dest: /home/{{ matlab_user }}/Desktop/MATLAB.desktop
     mode: "0644"
+    owner: "{{ matlab_user }}"
+    group: "{{ matlab_user }}"
+
+- name: Download MPM
+  ansible.builtin.get_url:
+    url: "https://www.mathworks.com/mpm/glnxa64/mpm"
+    dest: "/home/{{ matlab_user }}/mpm"
+    mode: "0755"
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
 
@@ -104,6 +204,23 @@
   register: matlab_install
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
+
+- name: Copy required files to remote
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  with_items:
+    - src: browser_readme
+      dest: /etc/browser_readme
+    - src: help_readme
+      dest: /etc/help_readme
+    - src: welcome_readme
+      dest: /etc/welcome_readme
+    - src: localsudo
+      dest: /etc/sudoers.d/localsudo
 
 - name: Create MATLAB start script
   ansible.builtin.copy:
