@@ -134,7 +134,7 @@
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
   with_items:
-    - src: xscreensaver
+    - src: .xscreensaver
       dest: /home/{{ matlab_user }}/.xscreensaver
     - src: matlab.prf
       dest: /home/{{ matlab_user }}/.matlab/{{ matlab_release }}/matlab.prf
@@ -142,7 +142,7 @@
       dest: /home/{{ matlab_user }}/MATLAB/startup.m
     - src: xfce4
       dest: /home/{{ matlab_user }}/.config/xfce4
-    - src: input.txt
+    - src: "{{ matlab_input_file }}"
       dest: /home/{{ matlab_user }}/input.txt
 
 - name: Touch MATLAB files 
