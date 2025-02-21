@@ -5,6 +5,7 @@ After=network.target
 [Service]
 User=matlab
 ExecStart=/usr/bin/bash -ic 'matlab-proxy-app'
+EnvironmentFile=/etc/systemd/system/matlab.env
 Restart=always
 WorkingDirectory=/home/matlab/Documents/MATLAB
 StandardOutput=journal

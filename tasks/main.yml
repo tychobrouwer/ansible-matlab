@@ -207,14 +207,21 @@
     group: root
     mode: "0644"
 
-- name: Create MATLAB symlink
+- name: Copy systemd matlab env file to remote
   ansible.builtin.copy:
-    src: "{{ matlab_install_location }}/bin/matlab"
-    dest: /usr/local/bin/matlab
-    remote_src: true
+    src: matlab.env
+    dest: /etc/systemd/system/matlab.env
     owner: root
     group: root
-    mode: "0755"
+    mode: "0644"
+
+- name: Create MATLAB symlink
+  ansible.builtin.file:
+    src: "{{ matlab_install_location }}/bin/matlab"
+    dest: /usr/local/bin/matlab
+    owner: root
+    group: root
+    state: link
 
 - name: Ensure matlab service file is on remote (systemd)
   ansible.builtin.template:
