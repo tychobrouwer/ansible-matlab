@@ -105,11 +105,10 @@
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
 
-- name: Create MATLAB Symlink
+- name: Create MATLAB start script
   ansible.builtin.copy:
     src: matlab
-    dest: "/usr/local/bin/matlab"
-    remote_src: true
+    dest: /usr/local/bin/matlab
     mode: "0755"
     owner: root
     group: root
