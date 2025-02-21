@@ -196,10 +196,13 @@
   ansible.builtin.shell: /tmp/install_managed_msh.sh --destination /opt/MathWorks/ServiceHost
   args:
     creates: /home/{{ matlab_user }}/.matlab/MathWorksServiceHost
+  register: mathworks_service_host
+  failed_when: mathworks_service_host.rc != 0 and "replace bin/lcdata.xml?" not in mathworks_service_host.stderr
+  changed_when: mathworks_service_host.changed and "replace bin/lcdata.xml?" not in mathworks_service_host.stderr
 
 - name: Create matlab desktop file
   ansible.builtin.template:
-    src: MATLAB.desktop.j2
+    src: MATLABcd .desktop.j2
     dest: /home/{{ matlab_user }}/Desktop/MATLAB.desktop
     mode: "0644"
     owner: "{{ matlab_user }}"
