@@ -1,7 +1,7 @@
 ---
 # tasks file for matlab
 - name: Install Required Dependencies
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name:
       - apt-utils
       - ca-certificates
@@ -80,7 +80,7 @@
     state: present
 
 - name: Remove unneeded packages
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name:
       - tumbler
       - pulseaudio
@@ -96,7 +96,7 @@
     name: "{{ matlab_user }}"
     shell: /bin/bash
     create_home: true
-    password: "!"
+    password: "{{ matlab_user_password | default('!') }}"
 
 - name: Create sudoers.d directory
   ansible.builtin.file:
@@ -115,24 +115,21 @@
 
 - name: Copy input file to remote
   ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
+    src: "{{ matlab_input_file }}"
+    dest: "/home/{{ matlab_user }}/input.txt"
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
     mode: "0644"
-  with_items:
-    - src: "{{ matlab_input_file }}"
-      dest: /home/{{ matlab_user }}/input.txt
 
 - name: Make MATLAB directories
   ansible.builtin.file:
-    path: /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons
+    path: "/home/{{ matlab_user }}/Documents/MATLAB/Add-Ons"
     state: directory
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
     mode: "0755"
 
-- name: Touch MATLAB files 
+- name: Touch MATLAB files
   ansible.builtin.file:
     path: "{{ item }}"
     state: touch
@@ -141,9 +138,9 @@
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
     mode: "0644"
-  with_items:
-    - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.toolboxFolders
-    - /home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.zipFolders
+  loop:
+    - "/home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.toolboxFolders"
+    - "/home/{{ matlab_user }}/Documents/MATLAB/Add-Ons/.zipFolders"
 
 - name: Add MATLAB to PATH
   ansible.builtin.lineinfile:
@@ -153,12 +150,12 @@
     mode: "0644"
     owner: root
     group: root
-  with_items:
-    - PATH="/home/matlab/.local/bin:$PATH"
-    - MW_DDUX_FORCE_ENABLE=true
-    - MWI_APP_PORT=8888
-    - MWI_ENABLE_TOKEN_AUTH=False
-    - MW_SERVICEHOST_USE_HOSTNAME_FOR_PERSISTENCE=false
+  loop:
+    - 'PATH="/home/matlab/.local/bin:$PATH"'
+    - 'MW_DDUX_FORCE_ENABLE=true'
+    - 'MWI_APP_PORT=8888'
+    - 'MWI_ENABLE_TOKEN_AUTH=False'
+    - 'MW_SERVICEHOST_USE_HOSTNAME_FOR_PERSISTENCE=false'
 
 - name: Install mathlab-proxy using pipx
   community.general.pipx:
@@ -167,7 +164,7 @@
   become: true
   become_user: "{{ matlab_user }}"
 
-- name: Get mathworks service host
+- name: Get MathWorks service host
   ansible.builtin.get_url:
     url: "{{ matlab_service_host_url }}"
     dest: "{{ matlab_service_host_script }}"
@@ -175,8 +172,9 @@
     owner: "{{ matlab_user }}"
     group: "{{ matlab_user }}"
 
-- name: Run mathworks service host
-  ansible.builtin.shell: HOME=/home/{{ matlab_user }} {{ matlab_service_host_script }} --destination {{ matlab_service_host_dest }}
+- name: Run MathWorks service host
+  ansible.builtin.shell: |
+    HOME=/home/{{ matlab_user }} {{ matlab_service_host_script }} --destination {{ matlab_service_host_dest }}
   args:
     creates: /home/{{ matlab_user }}/.matlab/MathWorksServiceHost
   register: mathworks_service_host
@@ -192,7 +190,7 @@
     group: "{{ matlab_user }}"
 
 - name: Install MATLAB using MPM
-  ansible.builtin.shell: "{{ matlab_mpm_dest }} install --inputfile /home/{{ matlab_user }}/input.txt"
+  ansible.builtin.command: "{{ matlab_mpm_dest }} install --inputfile /home/{{ matlab_user }}/input.txt"
   register: matlab_install
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
@@ -207,7 +205,7 @@
     mode: "0644"
   notify: Restart matlab
 
-- name: Copy systemd matlab env file to remote
+- name: Copy systemd MATLAB env file to remote
   ansible.builtin.copy:
     src: matlab.env
     dest: /etc/systemd/system/matlab.env
@@ -224,7 +222,7 @@
     group: root
     state: link
 
-- name: Ensure matlab service file is on remote (systemd)
+- name: Ensure MATLAB service file is on remote (systemd)
   ansible.builtin.template:
     src: matlab.service.j2
     dest: /etc/systemd/system/matlab.service
@@ -233,8 +231,8 @@
     group: root
   notify: Restart matlab
 
-- name: Ensure matlab service is enabled and started
-  ansible.builtin.service:
+- name: Ensure MATLAB service is enabled and started
+  ansible.builtin.systemd:
     name: matlab
     state: started
     enabled: true

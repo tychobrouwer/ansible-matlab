@@ -1,6 +1,7 @@
 ---
 # handlers file for matlab
 - name: Restart matlab
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: matlab
     state: restarted
+    daemon_reload: true
