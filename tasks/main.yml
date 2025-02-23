@@ -196,6 +196,7 @@
   register: matlab_install
   changed_when: "'All specified products are already installed' not in matlab_install.stderr"
   failed_when: (matlab_install.rc != 0) and ('All specified products are already installed' not in matlab_install.stderr)
+  notify: Restart matlab
 
 - name: Copy localsudo file to remote
   ansible.builtin.copy:
@@ -204,6 +205,7 @@
     owner: root
     group: root
     mode: "0644"
+  notify: Restart matlab
 
 - name: Copy systemd matlab env file to remote
   ansible.builtin.copy:
@@ -212,6 +214,7 @@
     owner: root
     group: root
     mode: "0644"
+  notify: Restart matlab
 
 - name: Create MATLAB symlink
   ansible.builtin.file:
@@ -228,6 +231,7 @@
     mode: "0664"
     owner: root
     group: root
+  notify: Restart matlab
 
 - name: Ensure matlab service is enabled and started
   ansible.builtin.service:

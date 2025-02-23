@@ -1,5 +1,5 @@
 ---
-# handlers file for pi-hole
+# handlers file for matlab
 - name: Restart matlab
   ansible.builtin.service:
     name: matlab
